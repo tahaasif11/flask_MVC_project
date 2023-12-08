@@ -1,0 +1,23 @@
+  .btn-margin {
+    margin: 10px; /* Adjust the value as needed */
+  }
+
+ .fixed-modal-body {
+    max-height: 400px;
+    overflow-y: auto;
+ }
+
+ /* Example CSS styles for DataTables */
+#userDataTable {
+  font-family: 'Arial', sans-serif;
+}
+
+#userDataTable th {
+  background-color: #f2f2f2;
+}
+
+#userDataTable tbody tr:hover {
+  background-color: #e0e0e0;
+}
+
+

@@ -238,11 +238,11 @@ function getUserData() {
     .then(data => {
   if (data.success) {
     console.log('get data successful');
-    users = data.users_data
+    users = data.resp_data
 
     loadUserData(users)
   } else {
-    console.error('get data failed:', data.error);
+    console.error('get data failed:', data.message);
     window.location.href = '/home';
   }
 })
@@ -388,11 +388,11 @@ async function get_one_User(user_id) {
 
     if (data.success) {
       console.log('Get data successful');
-      const user = data.users_data;
+      const user = data.resp_data;
       return user
 
     } else {
-      console.error('Get data failed:', data.error);
+      console.error('Get data failed:', data.message);
     }
   } catch (error) {
     console.error('Error:', error);
@@ -420,7 +420,7 @@ function update_user(UserData)
     console.log('updated successful');
     window.location.href = '/';
   } else {
-    console.error('updated failed:', data.error);
+    console.error('updated failed:', data.message);
     window.location.href = '/';
   }
 })

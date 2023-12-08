@@ -33,39 +33,45 @@ def forgot_password():
         data = request.json
         email = data.get('email')
 
-        expiration_time = datetime.utcnow() + timedelta(minutes=1)
-        token_data = {'email': email, 'exp': expiration_time.timestamp()}
-        token = serializer.dumps(token_data, salt='forgot-password')
-        print(f'Token for {email}: {token}')
+        user = user_model.find_user_by_email(email)
+        if user:
+            expiration_time = datetime.utcnow() + timedelta(minutes=1)
+            token_data = {'email': email, 'exp': expiration_time.timestamp()}
+            token = serializer.dumps(token_data, salt='forgot-password')
 
-        subject = 'Password Reset Request'
-        reset_link = url_for('form_bp.reset_password', token=token, _external=True)
-        body = f'Click the following link to reset your password: {reset_link}'
+            subject = 'Password Reset Request'
+            reset_link = url_for('form_bp.reset_password', token=token, _external=True)
+            body = f'Click the following link to reset your password: {reset_link}'
 
-        # Create the MIMEText object for the email body
-        msg = MIMEMultipart()
-        msg.attach(MIMEText(body, 'plain'))
+            # Create the MIMEText object for the email body
+            msg = MIMEMultipart()
+            msg.attach(MIMEText(body, 'plain'))
 
-        # Set the email subject and recipients
-        msg['Subject'] = subject
-        msg['From'] = MAIL_USERNAME
-        msg['To'] = email
+            # Set the email subject and recipients
+            msg['Subject'] = subject
+            msg['From'] = MAIL_USERNAME
+            msg['To'] = email
 
-        # Use your SMTP server to send the email
-        try:
-            server = smtplib.SMTP(config.smtp_domain, config.smtp_port)
-            server.starttls()
-            server.login(MAIL_USERNAME, MAIL_PASSWORD)  # Replace with your email and password
+            # Use your SMTP server to send the email
+            try:
+                server = smtplib.SMTP(config.smtp_domain, config.smtp_port)
+                server.starttls()
+                server.login(MAIL_USERNAME, MAIL_PASSWORD)  # Replace with your email and password
 
-            server.sendmail(MAIL_USERNAME, email, msg.as_string())
-            server.quit()
+                server.sendmail(MAIL_USERNAME, email, msg.as_string())
+                server.quit()
 
-            flash('Password reset link sent to your email. Please check your inbox.', 'success')
-        except Exception as e:
-            print(e)
-            flash('Failed to send the reset email. Please try again later.', 'danger')
+                flash('Password reset link sent to your email. Please check your inbox.', 'success')
+            except Exception as e:
+                print(e)
+                flash('Failed to send the reset email. Please try again later.', 'danger')
+            message = "Password reset link sent to your email."
+            return success_response(True,message)
+        else:
+            flash('Email not found.', 'danger')
+            message = 'Email not found. Try again'
+            return success_response(False, message)
 
-        return jsonify({'success': True})
     return render_template('home.html')
 
 
@@ -100,10 +106,12 @@ def update_reset_password():
             user_model.update_user_password(email, password)
 
             flash('Password updated successfully')
-            return jsonify({'success': True}), 200
+            message = 'Password updated successfully'
+            return success_response(True, message)
         else:
             flash('Password not updated')
-            return jsonify({'success': False, 'error': 'Password Not updated'}), 401
+            message = 'Password not updated'
+            return success_response(False, message)
 
 
 def logout():
@@ -122,13 +130,15 @@ def login():
             session['user_name'] = user['name']
             session['email'] = user['email']
 
+            message = 'Login successfully.'
+            resp = success_response(True, message)
             # Set the user information in cookies
-            resp = jsonify({'success': True})
             resp.set_cookie('user_name', user['name'])
             resp.set_cookie('user_email', user['email'])
             return resp
         else:
-            return jsonify({'success': False, 'error': 'Invalid email or password'})
+            message = 'Invalid email or password.'
+            return success_response(False, message)
     else:
         return redirect(url_for('form_bp.home'))
 
@@ -146,13 +156,14 @@ def register():
             session['user_name'] = name
             session['email'] = email
 
+            message = 'Created successfully.'
+            resp = success_response(True, message)
             # Set the user information in cookies
-            resp = jsonify({'success': True})
             resp.set_cookie('user_name', name)
             resp.set_cookie('user_email', email)
             return resp
         except Exception as e:
-            return jsonify({'success': False, 'error': str(e)})
+            return success_response(False, str(e))
     else:
         return redirect(url_for('form_bp.home'))
 
@@ -160,24 +171,14 @@ def register():
 def get_all_data():
     if request.method == 'GET':
         all_users = user_model.all_users()
-        users_list = []
-        for user in all_users:
-            user_data = {
-                'id': user['id'],
-                'name': user['name'],
-                'email': user['email'],
-                'password': user['password'],
-                'birthday': user['birthday'],
-                'age': user['age'],
-                'description': user['description'],
-            }
-            users_list.append(user_data)
-            response = {
-                'success': True,
-                'message': 'User data retrieved successfully',
-                'users_data': users_list
-            }
-        return jsonify(response)
+
+        # response = {
+        #     'success': True,
+        #     'message': 'User data retrieved successfully',
+        #     'users_data': all_users
+        # }
+        message = 'User data retrieved successfully'
+        return success_response(True, message,all_users)
 
 
 def get_one_data():
@@ -185,21 +186,13 @@ def get_one_data():
         id = request.json.get('id')
         user = user_model.find_user_by_id(id)
 
-        user_data = {
-            'id': user['id'],
-            'name': user['name'],
-            'email': user['email'],
-            'password': user['password'],
-            'birthday': user['birthday'],
-            'age': user['age'],
-            'description': user['description'],
-        }
-        response = {
-            'success': True,
-            'message': 'User data retrieved successfully',
-            'users_data': user_data
-        }
-        return jsonify(response)
+        # response = {
+        #     'success': True,
+        #     'message': 'User data retrieved successfully',
+        #     'users_data': user
+        # }
+        message = 'User data retrieved successfully'
+        return success_response(True, message, user)
 
 
 def update_user():
@@ -208,10 +201,10 @@ def update_user():
         id = data.get('id')
         try:
             user_model.update_user(data,id)
-            resp = jsonify({'success': True})
-            return resp
+            message = 'Updated successfully.'
+            return success_response(False, message)
         except Exception as e:
-            return jsonify({'success': False, 'error': str(e)})
+            return success_response(False, str(e))
     else:
         return redirect(url_for('form_bp.home'))
 
@@ -222,3 +215,15 @@ def page_not_found(error):
 
 def server_error(error):
     return render_template("error_500.html")
+
+
+def success_response(success, message, data=None):
+    response = {
+        'success': success,
+        'message': message,
+    }
+
+    if data is not None:
+        response['resp_data'] = data
+
+    return jsonify(response)
